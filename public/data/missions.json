@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 2,
+  "activeCampaign": "liris",
+  "campaigns": {
+    "zaremis": { "name": "Zaremis", "missions": [] },
+    "liris": {
+      "name": "Liris",
+      "missions": [
+    {
+      "id": "m-glass",
+      "title": "La reliquia de cristal",
+      "body": "Una luz imposible despierta cada noche en las ruinas del norte. Recupera la reliquia antes de que la encuentre la Orden Gris.",
+      "reward": "850 coronas",
+      "poster": 3,
+      "seal": "Crown Seal.png",
+      "color": "#30170d",
+      "x": 17,
+      "y": 22,
+      "rotation": -4,
+      "scale": 1
+    },
+    {
+      "id": "m-wolves",
+      "title": "Lobos en el camino",
+      "body": "Las caravanas no llegan desde Valdebruma. Sigue las huellas, despeja el paso y trae noticias de los mercaderes.",
+      "reward": "240 coronas",
+      "poster": 6,
+      "seal": "Eagle Seal.png",
+      "color": "#24140f",
+      "x": 49,
+      "y": 24,
+      "rotation": 3,
+      "scale": 0.92
+    },
+    {
+      "id": "m-herbs",
+      "title": "Hierbas para la sanadora",
+      "body": "Se necesitan seis flores de luna del pantano oriental. Son fáciles de reconocer; lo difícil es volver con ellas.",
+      "reward": "120 coronas",
+      "poster": 1,
+      "seal": "Flower Seal.png",
+      "color": "#18351f",
+      "x": 76,
+      "y": 28,
+      "rotation": -2,
+      "scale": 0.88
+    },
+    {
+      "id": "m-tower",
+      "title": "La torre silenciosa",
+      "body": "El vigía de la torre costera no ha encendido el fuego en tres noches. Investiga y restablece la señal.",
+      "reward": "500 coronas",
+      "poster": 8,
+      "seal": "Sigil Seal.png",
+      "color": "#2d1628",
+      "x": 35,
+      "y": 62,
+      "rotation": 2,
+      "scale": 0.9
+    },
+    {
+      "id": "m-rats",
+      "title": "Ruidos bajo la posada",
+      "body": "La bodega de El Ciervo Rojo tiene nuevos inquilinos. El posadero asegura que las ratas ahora llevan armadura.",
+      "reward": "75 coronas y cena",
+      "poster": 4,
+      "seal": "Crown Seal.png",
+      "color": "#3b1d0f",
+      "x": 67,
+      "y": 66,
+      "rotation": -5,
+      "scale": 0.82
+    }
+      ]
+    },
+    "amstrad": { "name": "Amstrad", "missions": [] }
+  }
+}
