@@ -60,6 +60,10 @@ function normalizeState() {
 function normalizeMission(m) {
   return {
     posterType: "ruined",
+    wanted: false,
+    characterImage: "",
+    characterX: 50, characterY: 49,
+    characterScale: 1,
     titleX: 50, titleY: 16,
     bodyX: 50, bodyY: 44,
     rewardX: 50, rewardY: 78,
@@ -79,9 +83,12 @@ function missionMarkup(m, admin = false) {
     <article class="mission-card${selectedId === m.id ? " is-selected" : ""}" data-id="${m.id}"
       style="--x:${m.x}%;--y:${m.y}%;--r:${m.rotation}deg;--s:${m.scale || 1};--ink:${m.color};
       --title-x:${m.titleX}%;--title-y:${m.titleY}%;--body-x:${m.bodyX}%;--body-y:${m.bodyY}%;
-      --reward-x:${m.rewardX}%;--reward-y:${m.rewardY}%;--seal-x:${m.sealX}%;--seal-y:${m.sealY}%">
+      --reward-x:${m.rewardX}%;--reward-y:${m.rewardY}%;--seal-x:${m.sealX}%;--seal-y:${m.sealY}%;
+      --character-x:${m.characterX}%;--character-y:${m.characterY}%;--character-scale:${m.characterScale}">
       <img class="paper" src="${posterSrc(m.poster, m.posterType)}" alt="" draggable="false">
+      ${m.wanted && m.characterImage ? `<img class="wanted-character ${admin ? `editable-part" data-part="character` : ""}" src="${attr(m.characterImage)}" alt="Personaje buscado" draggable="false">` : ""}
       <div class="mission-copy">
+        ${m.wanted ? `<span class="wanted-heading">SE BUSCA</span>` : ""}
         <h2 class="${editable("title")}">${formatInlineText(m.title)}</h2>
         <span class="divider">◆</span>
         <p class="mission-body ${editable("body")}">${formatInlineText(m.body)}</p>
@@ -193,6 +200,15 @@ function renderAdmin() {
           <label>Título<input name="title" maxlength="48" required value="${attr(m.title)}"></label>
           <label>Descripción<textarea name="body" maxlength="280" required>${escapeHtml(m.body)}</textarea><span class="char-count">${m.body.length}/280</span></label>
           <label>Recompensa<input name="reward" maxlength="40" value="${attr(m.reward)}" placeholder="Ej: 300 coronas"></label>
+          <div class="field-group wanted-editor">
+            <label class="wanted-toggle"><input type="checkbox" name="wanted" ${m.wanted ? "checked" : ""}> Póster tipo «Se busca»</label>
+            <div class="wanted-controls" ${m.wanted ? "" : "hidden"}>
+              <label class="character-upload">Subir personaje PNG<input id="character-upload" type="file" accept="image/png,.png"></label>
+              <button id="remove-character" type="button" ${m.characterImage ? "" : "disabled"}>Quitar imagen</button>
+              <small>${m.characterImage ? "PNG cargado · arrástralo sobre el póster para colocarlo" : "Sube un PNG con fondo transparente (máximo 1,5 MB)"}</small>
+              <label>Tamaño del personaje <span><input type="range" name="characterScale" min=".25" max="2.5" step=".01" value="${m.characterScale}"><output>${Math.round(m.characterScale * 100)}%</output></span></label>
+            </div>
+          </div>
           <div class="field-group"><span>Estilo del pergamino</span>
             <div class="paper-library">
               <small>Deteriorados</small>
@@ -208,9 +224,9 @@ function renderAdmin() {
           <input type="hidden" name="x" value="${m.x}">
           <input type="hidden" name="y" value="${m.y}">
           <input type="hidden" name="rotation" value="${m.rotation}">
-          ${["titleX","titleY","bodyX","bodyY","rewardX","rewardY","sealX","sealY"].map(key => `<input type="hidden" name="${key}" value="${m[key]}">`).join("")}
+          ${["titleX","titleY","bodyX","bodyY","rewardX","rewardY","sealX","sealY","characterX","characterY"].map(key => `<input type="hidden" name="${key}" value="${m[key]}">`).join("")}
           <div class="position-fields">
-            <p class="mouse-help"><span>↖</span><strong>Edición directa</strong>Arrastra el papel para mover la misión. Arrastra cada texto o sello para acomodarlo por separado.</p>
+            <p class="mouse-help"><span>↖</span><strong>Edición directa</strong>Arrastra el papel para mover la misión. Arrastra cada texto, sello o personaje para acomodarlo por separado.</p>
             <label>Tamaño <span><input type="range" name="scale" min=".65" max="1.15" step=".01" value="${m.scale}"><output>${Math.round(m.scale*100)}%</output></span></label>
           </div>
           <div class="form-actions"><button type="button" class="danger" id="delete">Eliminar</button><button type="submit" class="primary">Guardar misión</button></div>
@@ -235,12 +251,15 @@ function formToMission(form, base) {
   return normalizeMission({
     ...base,
     title: data.get("title"), body: data.get("body"), reward: data.get("reward"),
+    wanted: data.has("wanted"),
     poster: +poster, posterType, seal: data.get("seal"), color: data.get("color"),
     x: +data.get("x"), y: +data.get("y"), scale: +data.get("scale"), rotation: +data.get("rotation"),
     titleX: +data.get("titleX"), titleY: +data.get("titleY"),
     bodyX: +data.get("bodyX"), bodyY: +data.get("bodyY"),
     rewardX: +data.get("rewardX"), rewardY: +data.get("rewardY"),
-    sealX: +data.get("sealX"), sealY: +data.get("sealY")
+    sealX: +data.get("sealX"), sealY: +data.get("sealY"),
+    characterX: +data.get("characterX"), characterY: +data.get("characterY"),
+    characterScale: +data.get("characterScale")
   });
 }
 
@@ -259,9 +278,36 @@ function bindAdmin(base) {
       input.nextElementSibling.value = `${Math.round(input.value*100)}%`;
     });
     form.querySelector('[name="color"]').nextElementSibling.value = current.color;
+    form.querySelector(".wanted-controls").hidden = !current.wanted;
   };
   form.addEventListener("input", updatePreview);
   form.addEventListener("change", updatePreview);
+  form.querySelector("#character-upload").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.type !== "image/png" || file.size > 1.5 * 1024 * 1024) {
+      e.target.value = "";
+      toast("Elegí un PNG de hasta 1,5 MB", true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      base.characterImage = reader.result;
+      base.wanted = true;
+      form.elements.wanted.checked = true;
+      updatePreview();
+      form.querySelector("#remove-character").disabled = false;
+      form.querySelector(".wanted-controls small").textContent = "PNG cargado · arrástralo sobre el póster para colocarlo";
+      toast("Personaje cargado; ahora podés arrastrarlo sobre el póster");
+    };
+    reader.readAsDataURL(file);
+  });
+  form.querySelector("#remove-character").onclick = () => {
+    base.characterImage = "";
+    updatePreview();
+    form.querySelector("#remove-character").disabled = true;
+    form.querySelector(".wanted-controls small").textContent = "Sube un PNG con fondo transparente (máximo 1,5 MB)";
+  };
   form.addEventListener("submit", e => {
     e.preventDefault();
     const mission = formToMission(form, base);
