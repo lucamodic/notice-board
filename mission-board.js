@@ -1,5 +1,5 @@
 const ASSETS = "/Graphic Elements";
-const STORAGE_KEY = "mission-board-data-v1";
+const STORAGE_KEY = "mission-board-data-v2";
 const seals = ["Sin sello", "Crown Seal.png", "Eagle Seal.png", "Flower Seal.png", "Sigil Seal.png"];
 const CAMPAIGNS = [
   { id: "zaremis", name: "Zaremis" },
