@@ -6,5 +6,8 @@
   "scripts": {
     "build": "node build.mjs",
     "dev": "node server.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
   }
 }

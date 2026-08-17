@@ -10,6 +10,8 @@ let state = { schemaVersion: 2, activeCampaign: "liris", campaigns: {} };
 let adminCampaign = "liris";
 let selectedId = null;
 let editingId = null;
+let remoteSaveTimer = null;
+let remoteSaveChain = Promise.resolve();
 
 const campaignMissions = (id = adminCampaign) => state.campaigns[id]?.missions || [];
 
@@ -20,17 +22,16 @@ const sealSrc = name => `${ASSETS}/Wax Seals/${name}`;
 const uid = () => `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
 async function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      state = JSON.parse(saved);
-      normalizeState();
-      return;
-    } catch {}
+  try {
+    const response = await fetch("/api/board", { cache: "no-store" });
+    if (!response.ok) throw new Error();
+    state = await response.json();
+  } catch {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    state = saved ? JSON.parse(saved) : await fetch("/data/missions.json").then(r => r.json());
   }
-  state = await fetch("/data/missions.json").then(r => r.json());
   normalizeState();
-  saveState();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 function normalizeState() {
@@ -74,6 +75,20 @@ function normalizeMission(m) {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (location.pathname !== "/admin") return;
+  clearTimeout(remoteSaveTimer);
+  remoteSaveTimer = setTimeout(() => {
+    const snapshot = JSON.stringify(state);
+    remoteSaveChain = remoteSaveChain.then(async () => {
+      const response = await fetch("/api/board", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: snapshot
+      });
+      if (!response.ok) throw new Error();
+    }).catch(() => toast("No se pudo publicar el cambio. Revisá tu conexión.", true));
+  }, 200);
 }
 
 function missionMarkup(m, admin = false) {
@@ -242,6 +257,54 @@ function renderAdmin() {
       </section>
     </main>`;
   bindAdmin(m);
+}
+
+function renderLogin() {
+  document.title = "Acceso privado · Tablón de misiones";
+  app.innerHTML = `
+    <main class="login-page">
+      <form id="login-form" class="login-panel">
+        <div class="brand"><span>✦</span><div><small>GREMIO</small><strong>Maestro del tablón</strong></div></div>
+        <div class="login-heading"><p>Acceso privado</p><h1>Administrar misiones</h1></div>
+        <label>Usuario<input name="username" autocomplete="username" required autofocus></label>
+        <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+        <p class="login-error" role="alert" hidden>Usuario o contraseña incorrectos.</p>
+        <button class="primary" type="submit">Entrar</button>
+      </form>
+    </main>`;
+
+  const form = document.querySelector("#login-form");
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = form.querySelector("button");
+    const error = form.querySelector(".login-error");
+    button.disabled = true;
+    error.hidden = true;
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(Object.fromEntries(new FormData(form)))
+      });
+      if (!response.ok) throw new Error();
+      await loadState();
+      renderAdmin();
+    } catch {
+      error.hidden = false;
+      form.elements.password.select();
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+async function hasAdminSession() {
+  try {
+    return (await fetch("/api/auth", { credentials: "same-origin" })).ok;
+  } catch {
+    return false;
+  }
 }
 
 function formToMission(form, base) {
@@ -484,7 +547,15 @@ function formatInlineText(value = "") {
 }
 function attr(value = "") { return escapeHtml(value); }
 
-await loadState();
-if (location.pathname === "/admin") renderAdmin();
-else if (location.pathname !== "/missions") history.replaceState({}, "", "/missions"), renderMissions();
-else renderMissions();
+if (location.pathname === "/admin") {
+  if (await hasAdminSession()) {
+    await loadState();
+    renderAdmin();
+  } else {
+    renderLogin();
+  }
+} else {
+  await loadState();
+  if (location.pathname !== "/missions") history.replaceState({}, "", "/missions");
+  renderMissions();
+}
