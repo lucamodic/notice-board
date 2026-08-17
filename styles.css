@@ -298,20 +298,6 @@ select {
   color: #bcd0b5;
   cursor: default;
 }
-.campaign-title {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateX(-50%);
-  color: #ead9b7;
-  text-shadow: 0 2px 5px #000;
-}
-.campaign-title small { color: #bc8b47; letter-spacing: .18em; }
-.campaign-title strong { font: 700 24px Almendra; }
 .panel-heading h1 {
   font: 700 30px Almendra;
   margin: 2px 0;

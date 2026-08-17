@@ -108,7 +108,6 @@ function renderMissions() {
   document.title = "Misiones · Tablón de aventureros";
   app.innerHTML = `
     <main class="missions-page">
-      <div class="campaign-title"><small>CAMPAÑA ACTIVA</small><strong>${escapeHtml(campaign?.name || "Zaremis")}</strong></div>
       <section class="board" aria-label="Tablón de ${escapeHtml(campaign?.name || "Zaremis")}">
         <div class="board-posts">${missions.map(m => missionMarkup(m)).join("")}</div>
       </section>
